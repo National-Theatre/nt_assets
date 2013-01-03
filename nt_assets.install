@@ -1,0 +1,837 @@
+<?php
+/**
+ * @file
+ * @copyright The Royal National Theatre
+ * @author John-Paul Drawneek
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function nt_assets_schema() {
+  return array();
+}
+
+/**
+ * Implements hook_field_schema().
+ *
+ * @param array $field
+ *   A field structure.
+ */
+function nt_assets_field_schema($field) {
+
+}
+
+/**
+ * Implements hook_install().
+ */
+function nt_assets_install() {
+
+  _nt_assets_install_image();
+  _nt_assets_install_video();
+  _nt_assets_install_audio();
+  _nt_assets_install_gallery();
+  _nt_assets_service_endpoint();
+
+  $role = new stdClass();
+  $role->name = 'NT CMS Asset Import';
+  if (user_role_save($role)) {
+    variable_set('nt_assets_rid', $role->rid);
+    user_role_grant_permissions($role->rid, array('create image content', 'create video content'));
+    $user = array(
+      'name' => 'CMS-Import',
+      'mail' => 'DigitalMedia@nationaltheatre.org.uk',
+      'roles' => array($role->rid => $role->name),
+      'pass' => 'na*Th%o3',
+    );
+    $user_class = new stdClass();
+    $user = user_save($user_class, $user);
+
+    if ($user !== FALSE) {
+      variable_set('nt_assets_uid', $user->uid);
+    }
+    else {
+      watchdog('USR', 'Failed to create user for NT Assets.', NULL, WATCHDOG_ERROR);
+    }
+  }
+  else {
+    watchdog('ROLE', 'Failed to create role for NT Assets.', NULL, WATCHDOG_ERROR);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function nt_assets_uninstall() {
+  _nt_assets_uninstall_image();
+  _nt_assets_uninstall_video();
+  _nt_assets_uninstall_audio();
+  _nt_assets_uninstall_gallery();
+  field_purge_batch(1000);
+  $endpoint = services_endpoint_load('cms_assets_import');
+  services_endpoint_delete($endpoint);
+  user_delete(variable_get('nt_assets_uid'));
+  user_role_delete((int) variable_get('nt_assets_rid'));
+  variable_del('nt_assets_uid');
+  variable_del('nt_assets_rid');
+  variable_del('finalcut_audio_directory');
+  variable_del('finalcut_image_directory');
+  variable_del('finalcut_video_directory');
+}
+/**
+ * Image assets install
+ * @access private
+ */
+function _nt_assets_install_image() {
+  $t = get_t();
+  $node_example = array(
+    'type' => 'image',
+    'name' => $t('Image Asset'),
+    'base' => 'node_content',
+    'description' => $t('Image Asset to be linked to other nodes.  Can be imported from NT CMS.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+  $content_type = node_type_set_defaults($node_example);
+  node_type_save($content_type);
+  node_add_body_field($content_type, $t('Description'));
+  node_type_save($content_type);
+  foreach (_nt_assets_install_image_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_assets_install_image_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = $node_example['type'];
+    field_create_instance($instance);
+  }
+}
+/**
+ * image asset fields
+ * @access private
+ *
+ * @return array
+ *   Image fields config
+ */
+function _nt_assets_install_image_fields() {
+
+  return array(
+    'nt_image_image' => array(
+      'field_name' => 'nt_image_image',
+      'cardinality' => 1,
+      'type' => 'image',
+      'settings' => array(),
+    ),
+    'nt_image_img_stdio' => array(
+      'field_name' => 'nt_image_img_stdio',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_image_production' => array(
+      'field_name' => 'nt_image_production',
+      'cardinality' => 1,
+      'type' => 'entityreference',
+      'settings' => array(
+        'target_type' => 'node',
+        'handler_settings' => array(
+          'target_bundles' => array(
+            'production',
+          ),
+        ),
+      ),
+    ),
+  );
+}
+/**
+ * image_instances
+ * @access private
+ *
+ * @return array
+ *   Image instances config
+ */
+function _nt_assets_install_image_instances() {
+  $t = get_t();
+  return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_image_image' => array(
+      'field_name' => 'nt_image_image',
+      'label' => $t('Image'),
+      'widget' => array(
+        'type' => 'image_image',
+      ),
+    ),
+    'nt_image_img_stdio' => array(
+      'field_name' => 'nt_image_img_stdio',
+      'label' => $t('Studio Image'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_credits' => array(
+      'field_name' => 'nt_credits',
+      'label' => $t('Credit'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_tags' => array(
+      'field_name' => 'nt_tags',
+      'label' => $t('Free tags'),
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+    ),
+    'nt_image_production' => array(
+      'field_name' => 'nt_image_production',
+      'label' => $t('Production link'),
+      'widget' => array(
+        'type' => 'entityreference_autocomplete',
+      ),
+    ),
+    'nt_archive_code' => array(
+      'field_name' => 'nt_archive_code',
+      'label' => $t('Archive ID'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_asset_id' => array(
+      'field_name' => 'nt_asset_id',
+      'label' => $t('Asset ID'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+    ),
+    'nt_asset_category' => array(
+      'field_name' => 'nt_asset_category',
+      'label' => $t('Type'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+    ),
+  );
+}
+/**
+ * Image Asset uninstall
+ * @access private
+ */
+function _nt_assets_uninstall_image() {
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'image'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  foreach (_nt_assets_install_image_fields() as $field_name => $field) {
+    field_delete_field($field_name);
+  }
+  $instances = field_info_instances('node', 'image');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+  node_type_delete('image');
+}
+
+/**
+ * Video Asset install
+ * @access private
+ */
+function _nt_assets_install_video() {
+  $t = get_t();
+  $node_example = array(
+    'type' => 'video',
+    'name' => $t('Video Asset'),
+    'base' => 'node_content',
+    'description' => $t('Video Asset to be linked to other nodes.  Can be imported from NT CMS.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+  $content_type = node_type_set_defaults($node_example);
+  node_type_save($content_type);
+  node_add_body_field($content_type, $t('Description'));
+  node_type_save($content_type);
+  foreach (_nt_assets_install_video_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_assets_install_video_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = $node_example['type'];
+    field_create_instance($instance);
+  }
+}
+/**
+ * nt_assets_install_video_fields
+ * @access private
+ *
+ * @return array
+ *   video fields config
+ */
+function _nt_assets_install_video_fields() {
+
+  return array(
+    'nt_video_file_url' => array(
+      'field_name' => 'nt_video_file_url',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_video_file' => array(
+      'field_name' => 'nt_video_file',
+      'cardinality' => 1,
+      'type' => 'file',
+      'settings' => array(),
+    ),
+    'nt_video_running_time' => array(
+      'field_name' => 'nt_video_running_time',
+      'cardinality' => 1,
+      'type' => 'number_float',
+      'settings' => array(
+        'decimal_separator' => '.',
+      ),
+    ),
+    'nt_video_srt' => array(
+      'field_name' => 'nt_video_srt',
+      'cardinality' => 1,
+      'type' => 'file',
+      'settings' => array(),
+    ),
+    'nt_video_thumb' => array(
+      'field_name' => 'nt_video_thumb',
+      'cardinality' => 1,
+      'type' => 'entityreference',
+      'settings' => array(
+        'target_type' => 'node',
+        'handler_settings' => array(
+          'target_bundles' => array(
+            'image',
+          ),
+        ),
+      ),
+    ),
+    'nt_video_backstage' => array(
+      'field_name' => 'nt_video_backstage',
+      'cardinality' => 1,
+      'type' => 'taxonomy_term_reference',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => array('vocabulary' => 'backstage'),
+        ),
+      ),
+    ),
+    'nt_video_project_title' => array(
+      'field_name' => 'nt_video_project_title',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_video_weighting' => array(
+      'field_name' => 'nt_video_weighting',
+      'cardinality' => 1,
+      'type' => 'list_integer',
+      'settings' => array(
+        'allowed_values' => array(
+          1 => 1,
+          2 => 2,
+          3 => 3,
+          4 => 4,
+          5 => 5,
+          6 => 6,
+          7 => 7,
+          8 => 8,
+          9 => 9,
+          10 => 10,
+        ),
+      ),
+    ),
+  );
+}
+/**
+ * nt_assets_install_video_instances
+ * @access private
+ *
+ * @return array
+ *   Video instances config
+ */
+function _nt_assets_install_video_instances() {
+  $t = get_t();
+  return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_video_file_url' => array(
+      'field_name' => 'nt_video_file_url',
+      'label' => $t('File'),
+      'widget' => array(
+        'type' => 'file_file',
+      ),
+    ),
+    'nt_video_file' => array(
+      'field_name' => 'nt_video_file',
+      'label' => $t('Upload video file'),
+      'widget' => array(
+        'type' => 'file_file',
+      ),
+      'settings' => array(
+        'file_extensions' => 'flv mp4',
+      ),
+    ),
+    'nt_video_running_time' => array(
+      'field_name' => 'nt_video_running_time',
+      'label' => $t('Running time'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+    ),
+    'nt_video_thumb' => array(
+      'field_name' => 'nt_video_thumb',
+      'label' => $t('Thumb'),
+      'widget' => array(
+        'type' => 'entityreference_autocomplete',
+      ),
+    ),
+    'nt_video_srt' => array(
+      'field_name' => 'nt_video_srt',
+      'label' => $t('Subtitles'),
+      'widget' => array(
+        'type' => 'file_generic',
+      ),
+    ),
+    'nt_credits' => array(
+      'field_name' => 'nt_credits',
+      'label' => $t('Credit'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_asset_category' => array(
+      'field_name' => 'nt_asset_category',
+      'label' => $t('Type'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+    ),
+    'nt_video_backstage' => array(
+      'field_name' => 'nt_video_backstage',
+      'label' => $t('Backstage'),
+      'widget' => array(
+        'type' => 'options_buttons',
+      ),
+    ),
+    'nt_tags' => array(
+      'field_name' => 'nt_tags',
+      'label' => $t('Free tags'),
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+    ),
+    'nt_archive_code' => array(
+      'field_name' => 'nt_archive_code',
+      'label' => $t('Archive code'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_asset_id' => array(
+      'field_name' => 'nt_asset_id',
+      'label' => $t('Asset ID'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+    ),
+    'nt_video_project_title' => array(
+      'field_name' => 'nt_video_project_title',
+      'label' => $t('Project title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_video_weighting' => array(
+      'field_name' => 'nt_video_weighting',
+      'label' => $t('Weighting'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+    ),
+  );
+}
+/**
+ * nt_assets_uninstall_video
+ * @access private
+ */
+function _nt_assets_uninstall_video() {
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'video'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  foreach (_nt_assets_install_video_fields() as $field_name => $field) {
+    field_delete_field($field_name);
+  }
+  $instances = field_info_instances('node', 'video');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+  node_type_delete('video');
+}
+/**
+ * nt_assets_service_endpoint
+ * @access private
+ */
+function _nt_assets_service_endpoint() {
+  $endpoint = new stdClass();
+  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
+  $endpoint->api_version = 3;
+  $endpoint->name = 'cms_assets_import';
+  $endpoint->server = 'rest_server';
+  $endpoint->path = 'cms-asset-import';
+  $endpoint->authentication = array(
+    'services' => 'services',
+  );
+  $endpoint->server_settings = array(
+    'rest_server' => array(
+      'formatters' => array(
+        'json' => TRUE,
+        'jsonp' => TRUE,
+        'php' => TRUE,
+        'bencode' => FALSE,
+        'rss' => FALSE,
+        'xml' => FALSE,
+        'yaml' => FALSE,
+      ),
+      'parsers' => array(
+        'application/json' => TRUE,
+        'application/vnd.php.serialized' => TRUE,
+        'application/x-www-form-urlencoded' => FALSE,
+        'application/x-yaml' => FALSE,
+        'multipart/form-data' => FALSE,
+      ),
+    ),
+  );
+  $endpoint->resources = array(
+    'node' => array(
+      'operations' => array(
+        'create' => array(
+          'enabled' => 1,
+        ),
+        'update' => array(
+          'enabled' => 1,
+        ),
+      ),
+    ),
+  );
+  $endpoint->debug = 0;
+  $endpoint->export_type = 0;
+  services_endpoint_save($endpoint);
+}
+
+/**
+ * Audio assets install
+ * @access private
+ */
+function _nt_assets_install_audio() {
+  $t = get_t();
+  $node_example = array(
+    'type' => 'nt_audio',
+    'name' => $t('Audio Asset'),
+    'base' => 'node_content',
+    'description' => $t('Audio Asset to be linked to other nodes.  Can be imported from NT CMS.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+  $content_type = node_type_set_defaults($node_example);
+  node_type_save($content_type);
+  node_add_body_field($content_type, $t('Description'));
+  node_type_save($content_type);  
+  foreach (_nt_assets_install_audio_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_assets_install_audio_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = $node_example['type'];
+    field_create_instance($instance);
+  }
+}
+/**
+ * Audio Asset uninstall
+ * @access private
+ */
+function _nt_assets_uninstall_audio() {
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'nt_audio'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  foreach (array_keys(_nt_assets_install_audio_fields()) as $field_name) {
+    field_delete_field($field_name);
+  }
+  $instances = field_info_instances('node', 'nt_audio');
+  foreach ($instances as $instance_name => $instance) {
+    field_delete_instance($instance);
+  }
+  node_type_delete('nt_audio');
+}
+/**
+ * nt_assets_install_audio_fields
+ * @access private
+ *
+ * @return array
+ *   video fields config
+ */
+function _nt_assets_install_audio_fields() {
+
+  return array(
+    'nt_audio_file_url' => array(
+      'field_name' => 'nt_audio_file_url',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_audio_file' => array(
+      'field_name' => 'nt_audio_file',
+      'cardinality' => 1,
+      'type' => 'file',
+      'settings' => array(),
+    ),
+    'nt_audio_running_time' => array(
+      'field_name' => 'nt_audio_running_time',
+      'cardinality' => 1,
+      'type' => 'number_float',
+      'settings' => array(
+        'decimal_separator' => '.',
+      ),
+    ),    
+    'nt_audio_thumb' => array(
+      'field_name' => 'nt_audio_thumb',
+      'cardinality' => 1,
+      'type' => 'entityreference',
+      'settings' => array(
+        'target_type' => 'node',
+        'handler_settings' => array(
+          'target_bundles' => array(
+            'image',
+          ),
+        ),
+      ),
+    ),
+    'nt_audio_types' => array(
+      'field_name' => 'nt_audio_types',
+      'cardinality' => -1,
+      'type' => 'taxonomy_term_reference',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => array('vocabulary' => 'nt_asset_category'),
+        ),
+      ),
+    ),
+    
+  );
+}
+/**
+ * nt_assets_install_audio_instances
+ * @access private
+ *
+ * @return array
+ *   Audio instances config
+ */
+function _nt_assets_install_audio_instances() {
+  $t = get_t();
+  return array(
+    'nt_audio_file_url' => array(
+      'field_name' => 'nt_audio_file_url',
+      'label' => $t('Audio file URL'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_audio_file' => array(
+      'field_name' => 'nt_audio_file',
+      'label' => $t('Audio File'),
+      'widget' => array(
+        'type' => 'file_file',
+      ),
+      'settings' => array(
+        'file_extensions' => 'mp3 ogg',
+      ),
+    ),
+    'nt_audio_running_time' => array(
+      'field_name' => 'nt_audio_running_time',
+      'label' => $t('Running Time'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+    ),
+    'nt_audio_thumb' => array(
+      'field_name' => 'nt_audio_thumb',
+      'label' => $t('Thumb'),
+      'widget' => array(
+        'type' => 'entityreference_autocomplete',
+      ),
+    ),
+    'nt_audio_types' => array(
+      'field_name' => 'nt_audio_types',
+      'label' => $t('Audio Types'),
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+    ),
+    'nt_credits' => array(
+      'field_name' => 'nt_credits',
+      'label' => $t('Credit'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_asset_category' => array(
+      'field_name' => 'nt_asset_category',
+      'label' => $t('Type'),
+      'widget' => array(
+        'type' => 'options_select',
+      ),
+    ),
+    'nt_tags' => array(
+      'field_name' => 'nt_tags',
+      'label' => $t('Free tags'),
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+    ),
+    'nt_archive_code' => array(
+      'field_name' => 'nt_archive_code',
+      'label' => $t('Archive code'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_asset_id' => array(
+      'field_name' => 'nt_asset_id',
+      'label' => $t('Asset ID'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+    ),
+  );
+}
+/**
+ * Gallery assets install
+ * @access private
+ */
+function _nt_assets_install_gallery() {
+  $t = get_t();
+  $node_example = array(
+    'type' => 'nt_gallery',
+    'name' => $t('Gallery Asset'),
+    'base' => 'node_content',
+    'description' => $t('Gallery Asset to be linked to other nodes.  Can be imported from NT CMS.'),
+    'title_label' => $t('Title'),
+    'custom' => TRUE,
+  );
+  $content_type = node_type_set_defaults($node_example);
+  node_type_save($content_type);
+  node_add_body_field($content_type, $t('Description'));
+  node_type_save($content_type);
+  foreach (_nt_assets_install_gallery_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_assets_install_gallery_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = $node_example['type'];
+    field_create_instance($instance);
+  }
+}
+/**
+ * nt_assets_install_gallery_fields
+ * @access private
+ *
+ * @return array
+ *   video fields config
+ */
+function _nt_assets_install_gallery_fields() {
+  return array(
+    'nt_gallery_items' => array(
+      'field_name' => 'nt_gallery_items',
+      'cardinality' => -1,
+      'type' => 'entityreference',
+      'settings' => array(
+        'target_type' => 'node',
+        'handler_settings' => array(
+          'target_bundles' => array(
+            'image',
+            'video',
+            'nt_audio',
+          ),
+        ),
+      ),
+    ),
+  );
+}
+/**
+ * nt_assets_install_gallery_instances
+ * @access private
+ *
+ * @return array
+ *   Audio instances config
+ */
+function _nt_assets_install_gallery_instances() {
+  $t = get_t();
+  return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_gallery_items' => array(
+      'field_name' => 'nt_gallery_items',
+      'label' => $t('Gallery Items'),
+      'description' => $t('For adding audio; images; video files to this.'),
+      'widget' => array(
+        'type' => 'entityreference_autocomplete',
+      ),
+    ),
+  );
+}
+/**
+ * Gallery Asset uninstall
+ * @access private
+ */
+function _nt_assets_uninstall_gallery() {
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'nt_gallery'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  foreach (array_keys(_nt_assets_install_gallery_fields()) as $field_name) {
+    field_delete_field($field_name);
+  }
+  $instances = field_info_instances('node', 'nt_gallery');
+  foreach ($instances as $instance) {
+    field_delete_instance($instance);
+  }
+  node_type_delete('nt_gallery');
+}

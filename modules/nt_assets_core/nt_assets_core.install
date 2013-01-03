@@ -1,0 +1,120 @@
+<?php
+/**
+ * @file
+ * @copyright The Royal National Theatre
+ * @author John-Paul Drawneek
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function nt_assets_core_schema() {
+  return array();
+}
+
+/**
+ * Implements hook_field_schema().
+ *
+ * @param array $field
+ *   A field structure.
+ */
+function nt_assets_core_field_schema($field) {
+
+}
+
+/**
+ * Implements hook_install().
+ */
+function nt_assets_core_install() {
+  $vocab = taxonomy_vocabulary_get_names();
+  if (!array_key_exists('nt_asset_category', $vocab)) {
+    $vocabulary = new stdClass();
+    $vocabulary->name = 'Asset Category';
+    $vocabulary->machine_name = 'nt_asset_category';
+    $vocabulary->module = 'nt_assets_core';
+    taxonomy_vocabulary_save($vocabulary);
+  }
+  if (!array_key_exists('nt_tags', $vocab)) {
+    $vocabulary = new stdClass();
+    $vocabulary->name = 'Tags';
+    $vocabulary->machine_name = 'nt_tags';
+    $vocabulary->module = 'nt_assets_core';
+    taxonomy_vocabulary_save($vocabulary);
+  }
+  foreach (_nt_assets_install_common_fields() as $field) {
+    field_create_field($field);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function nt_assets_core_uninstall() {
+  foreach (array_keys(_nt_assets_install_common_fields()) as $field_name) {
+    field_delete_field($field_name);
+  }
+  field_purge_batch(1000);
+}
+/**
+ * Configure Common fields for NT Assets
+ * @access private
+ *
+ * @return array
+ *   Fields config
+ */
+function _nt_assets_install_common_fields() {
+  return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_credits' => array(
+      'field_name' => 'nt_credits',
+      'cardinality' => -1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_tags' => array(
+      'field_name' => 'nt_tags',
+      'cardinality' => -1,
+      'type' => 'taxonomy_term_reference',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => array('vocabulary' => 'nt_tags'),
+        ),
+      ),
+    ),
+    'nt_archive_code' => array(
+      'field_name' => 'nt_archive_code',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_asset_id' => array(
+      'field_name' => 'nt_asset_id',
+      'cardinality' => 1,
+      'type' => 'number_integer',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+    'nt_asset_category' => array(
+      'field_name' => 'nt_asset_category',
+      'cardinality' => 1,
+      'type' => 'taxonomy_term_reference',
+      'settings' => array(
+        'allowed_values' => array(
+          0 => array('vocabulary' => 'asset_category'),
+        ),
+      ),
+    ),
+  );
+}

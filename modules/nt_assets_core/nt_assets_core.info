@@ -1,0 +1,16 @@
+name = NT Assets Core
+description = Module that details with NT Assets, including importing them from main cms
+core = 7.x
+package = NT
+php = 5.2
+version = 7.x-0.1-dev
+dependencies[] = field
+dependencies[] = file
+dependencies[] = number
+dependencies[] = list
+dependencies[] = image
+dependencies[] = taxonomy
+dependencies[] = entityreference
+; files[] = nt_assets.test
+; configure =
+datestamp = "1330342385"
