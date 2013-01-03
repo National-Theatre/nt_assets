@@ -9,7 +9,6 @@ dependencies[] = file
 dependencies[] = number
 dependencies[] = list
 dependencies[] = image
-dependencies[] = rest_server
 dependencies[] = taxonomy
 dependencies[] = entityreference
 dependencies[] = nt_assets_core

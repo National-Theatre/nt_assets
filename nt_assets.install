@@ -31,32 +31,6 @@ function nt_assets_install() {
   _nt_assets_install_video();
   _nt_assets_install_audio();
   _nt_assets_install_gallery();
-  _nt_assets_service_endpoint();
-
-  $role = new stdClass();
-  $role->name = 'NT CMS Asset Import';
-  if (user_role_save($role)) {
-    variable_set('nt_assets_rid', $role->rid);
-    user_role_grant_permissions($role->rid, array('create image content', 'create video content'));
-    $user = array(
-      'name' => 'CMS-Import',
-      'mail' => 'DigitalMedia@nationaltheatre.org.uk',
-      'roles' => array($role->rid => $role->name),
-      'pass' => 'na*Th%o3',
-    );
-    $user_class = new stdClass();
-    $user = user_save($user_class, $user);
-
-    if ($user !== FALSE) {
-      variable_set('nt_assets_uid', $user->uid);
-    }
-    else {
-      watchdog('USR', 'Failed to create user for NT Assets.', NULL, WATCHDOG_ERROR);
-    }
-  }
-  else {
-    watchdog('ROLE', 'Failed to create role for NT Assets.', NULL, WATCHDOG_ERROR);
-  }
 }
 
 /**
@@ -68,10 +42,6 @@ function nt_assets_uninstall() {
   _nt_assets_uninstall_audio();
   _nt_assets_uninstall_gallery();
   field_purge_batch(1000);
-  $endpoint = services_endpoint_load('cms_assets_import');
-  services_endpoint_delete($endpoint);
-  user_delete(variable_get('nt_assets_uid'));
-  user_role_delete((int) variable_get('nt_assets_rid'));
   variable_del('nt_assets_uid');
   variable_del('nt_assets_rid');
   variable_del('finalcut_audio_directory');
@@ -492,57 +462,6 @@ function _nt_assets_uninstall_video() {
   }
   node_type_delete('video');
 }
-/**
- * nt_assets_service_endpoint
- * @access private
- */
-function _nt_assets_service_endpoint() {
-  $endpoint = new stdClass();
-  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
-  $endpoint->api_version = 3;
-  $endpoint->name = 'cms_assets_import';
-  $endpoint->server = 'rest_server';
-  $endpoint->path = 'cms-asset-import';
-  $endpoint->authentication = array(
-    'services' => 'services',
-  );
-  $endpoint->server_settings = array(
-    'rest_server' => array(
-      'formatters' => array(
-        'json' => TRUE,
-        'jsonp' => TRUE,
-        'php' => TRUE,
-        'bencode' => FALSE,
-        'rss' => FALSE,
-        'xml' => FALSE,
-        'yaml' => FALSE,
-      ),
-      'parsers' => array(
-        'application/json' => TRUE,
-        'application/vnd.php.serialized' => TRUE,
-        'application/x-www-form-urlencoded' => FALSE,
-        'application/x-yaml' => FALSE,
-        'multipart/form-data' => FALSE,
-      ),
-    ),
-  );
-  $endpoint->resources = array(
-    'node' => array(
-      'operations' => array(
-        'create' => array(
-          'enabled' => 1,
-        ),
-        'update' => array(
-          'enabled' => 1,
-        ),
-      ),
-    ),
-  );
-  $endpoint->debug = 0;
-  $endpoint->export_type = 0;
-  services_endpoint_save($endpoint);
-}
-
 /**
  * Audio assets install
  * @access private
