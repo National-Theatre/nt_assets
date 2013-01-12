@@ -5,7 +5,7 @@
 -->
 <project name="nt_assets" default="build">
  <property name="drupalmodules" value="${basedir}/../drupal_template/drupal/sites/all/modules/custom" />
- <property name="drupalstandard" value="${basedir}/../drupal_template/drupal/sites/all/modules/coder/conder_sniffer/Drupal" />
+ <property name="drupalstandard" value="${basedir}/../drupal_template/drupal/sites/all/modules/coder/coder_sniffer/Drupal" />
  <property name="drupaltests" value="${basedir}/../drupal_template/tests" />
  <property name="builddir" value="${basedir}/../build" />
  <property name="excludemodules" value="" />
