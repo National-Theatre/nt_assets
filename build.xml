@@ -5,6 +5,7 @@
 -->
 <project name="nt_assets" default="build">
  <property name="drupalmodules" value="${basedir}/../drupal_template/drupal/sites/all/modules/custom" />
+ <property name="drupalstandard" value="${basedir}/../drupal_template/drupal/sites/all/modules/coder/conder_sniffer/Drupal" />
  <property name="drupaltests" value="${basedir}/../drupal_template/tests" />
  <property name="builddir" value="${basedir}/../build" />
  <property name="excludemodules" value="" />
@@ -51,7 +52,7 @@
   <delete dir="${builddir}/pdepend"/>
  </target>
 
-    <target name="prepare" depends="clean"
+    <target name="prepare" depends="clean" unless="prepared"
          description="Prepare for build">
         <mkdir dir="${builddir}/api"/>
         <mkdir dir="${builddir}/code-browser"/>
@@ -62,7 +63,7 @@
         <!-- copy test components into place -->
         <copy todir="${drupalmodules}/nt_assets">
             <fileset dir="${basedir}">
-                <exclude name="upal" />
+                <exclude name="**/upal/*" />
             </fileset>
         </copy>
         <copy todir="${drupaltests}/config">
@@ -77,6 +78,7 @@
         <copy todir="${drupaltests}/tests">
             <fileset dir="${basedir}/upal/tests"/>
         </copy>
+        <property name="prepared" value="TRUE" />
     </target>
 
  <target name="lint" depends="prepare"
@@ -154,16 +156,13 @@
 
  <target name="phpcs"
          description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
-  <exec executable="phpcs">
+  <exec executable="${drupaltests}/bin/phpcs">
    <arg value="-d" />
    <arg value="memory_limit=256M" />
-   <arg value="--standard=Drupal" />
+   <arg value="--standard=${drupalstandard}" />
    <arg value="--extensions=php,module,inc,install,profile,theme" />
    <!-- ignore test for now -->
-   <arg path="${drupalmodules}/bbpa" />
-   <arg path="${drupalmodules}/calm_import" />
-   <arg path="${drupalmodules}/nt_assets" />
-   <arg path="${drupalmodules}/nt_player" />
+   <arg path="${drupalmodules}" />
   </exec>
  </target>
 
