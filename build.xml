@@ -20,9 +20,8 @@
      <exclude name="**/upal/*" />
  </patternset>
  
- <fileset id="src.php" dir="${drupalmodules}">
-      <patternset refid="drupal.files.php"/>
- </fileset>
+ <target name="build-ci"
+   depends="prepare,lint,pdepend,phpmd-ci,phpcs-ci">
  
  <target name="build"
    depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcpd,docblox,phpunit,phpcb"/>
@@ -100,7 +99,7 @@
  <target name="phploc" description="Measure project size using PHPLOC">
   <exec executable="phploc">
    <arg value="--log-csv" />
-   <arg value="${basedir}/build/logs/phploc.csv" />
+   <arg value="${builddir}/logs/phploc.csv" />
    <arg value="--exclude" />
    <arg value="${excludemodules}" />
    <arg value="--suffixes" />
@@ -111,15 +110,15 @@
 
  <target name="pdepend"
          description="Calculate software metrics using PHP_Depend">
-  <exec executable="pdepend">
+  <exec executable="${drupaltests}/vendor/pdepend/pdepend/src/bin/pdepend">
    <arg value="-d" />
    <arg value="memory_limit=256M" />
    <arg value="--suffix=php,module,inc,install,profile,theme" />
    <arg value="--ignore=${excludemodules}" />
-   <arg value="--jdepend-xml=${basedir}/build/logs/jdepend.xml" />
-   <arg value="--jdepend-chart=${basedir}/build/pdepend/dependencies.svg" />
-   <arg value="--overview-pyramid=${basedir}/build/pdepend/overview-pyramid.svg" />
-   <arg value="--phpunit-xml=${basedir}/build/logs/pdepend.xml" />
+   <arg value="--jdepend-xml=${builddir}/logs/jdepend.xml" />
+   <arg value="--jdepend-chart=${builddir}/pdepend/dependencies.svg" />
+   <arg value="--overview-pyramid=${builddir}/pdepend/overview-pyramid.svg" />
+   <arg value="--phpunit-xml=${builddir}/logs/pdepend.xml" />
    <arg path="${drupalmodules}" />
   </exec>
  </target>
@@ -140,7 +139,7 @@
 
  <target name="phpmd-ci"
          description="Perform project mess detection using PHPMD creating a log file for the continuous integration server">
-  <exec executable="phpmd">
+  <exec executable="${drupaltests}/vendor/phpmd/phpmd/src/bin/phpmd">
    <arg value="--exclude" />
    <arg value="${excludemodules}" />
    <arg value="--suffixes" />
@@ -184,7 +183,7 @@
  <target name="phpcpd" description="Find duplicate code using PHPCPD">
   <exec executable="phpcpd">
    <arg value="--log-pmd" />
-   <arg value="${basedir}/build/logs/pmd-cpd.xml" />
+   <arg value="${builddir}/logs/pmd-cpd.xml" />
    <arg value="--suffixes" />
    <arg value="php,module,inc,install,profile,theme" />   
    <arg value="--exclude" />
@@ -235,11 +234,11 @@
          description="Aggregate tool output with PHP_CodeBrowser">
   <exec executable="phpcb">
    <arg value="--log" />
-   <arg path="${basedir}/build/logs" />
+   <arg path="${builddir}/logs" />
    <arg value="--source" />
    <arg path="${drupalmodules}" />
    <arg value="--output" />
-   <arg path="${basedir}/build/code-browser" />
+   <arg path="${builddir}/code-browser" />
   </exec>
  </target>
 </project> 
