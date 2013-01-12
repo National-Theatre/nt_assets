@@ -150,13 +150,13 @@
    <arg value="codesize,unusedcode,naming" />
    <!--<arg value="${basedir}/build/phpmd.xml" />-->
    <arg value="--reportfile" />
-   <arg value="${basedir}/build/logs/pmd.xml" />
+   <arg value="${builddir}/logs/pmd.xml" />
   </exec>
  </target>
 
- <target name="phpcs"
+ <target name="phpcs" depends="prepare"
          description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
-  <exec executable="${drupaltests}/bin/phpcs">
+  <exec executable="${drupaltests}/vendor/squizlabs/php_codesniffer/scripts/phpcs">
    <arg value="-d" />
    <arg value="memory_limit=256M" />
    <arg value="--standard=${drupalstandard}" />
@@ -166,21 +166,18 @@
   </exec>
  </target>
 
- <target name="phpcs-ci"
+ <target name="phpcs-ci" depends="prepare"
          description="Find coding standard violations using PHP_CodeSniffer creating a log file for the continuous integration server">
-  <exec executable="phpcs">
+  <exec executable="${drupaltests}/vendor/squizlabs/php_codesniffer/scripts/phpcs">
    <arg value="--report=checkstyle" />
-   <arg value="--report-file=${basedir}/build/logs/checkstyle.xml" />
-   <arg value="--report-xml=${basedir}/build/logs/codesniffer.xml" />
+   <arg value="--report-file=${builddir}/logs/checkstyle.xml" />
+   <arg value="--report-xml=${builddir}/logs/codesniffer.xml" />
    <arg value="-d" />
    <arg value="memory_limit=256M" />
-   <arg value="--standard=Drupal" />
+   <arg value="--standard=${drupalstandard}" />
    <arg value="--extensions=php,module,inc,install,profile,theme" />
    <!-- ignore test for now -->
-   <arg path="${drupalmodules}/bbpa" />
-   <arg path="${drupalmodules}/calm_import" />
-   <arg path="${drupalmodules}/nt_assets" />
-   <arg path="${drupalmodules}/nt_player" />
+   <arg path="${drupalmodules}" />
   </exec>
  </target>
 
