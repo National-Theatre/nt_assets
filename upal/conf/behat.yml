@@ -1,0 +1,28 @@
+# behat.yml
+default:
+  context:
+    parameters:
+      UPAL_ROOT: %behat.paths.base%/../../drupal
+      UPAL_WEB_URL: http://nt_assets.drupal.test.local
+      UPAL_DB_URL: mysql://drupal:drupal@localhost/drupal_test
+      UPAL_USE_DB: drupal_img_20120614.sql
+      PREFIX: ntweb
+      TESTING: TRUE
+      UPAL_DB_PATH: %behat.paths.base%/../includes
+  paths:
+    features:  %behat.paths.base%/../features
+    bootstrap: %behat.paths.features%/bootstrap
+  extensions:
+    Behat\MinkExtension\Extension:
+      base_url: http://nt_assets.drupal.test.local
+      goutte: ~
+      selenium2: ~
+      sahi: ~
+    Drupal\DrupalExtension\Extension:
+      blackbox: ~
+      
+ci:
+  formatter:
+    name: junit
+    parameters:
+      output_path: /../../build/behat
