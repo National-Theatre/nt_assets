@@ -21,7 +21,7 @@
  </patternset>
  
  <target name="build-ci"
-   depends="prepare,lint,pdepend,phpmd-ci,phpcs-ci">
+   depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci" />
  
  <target name="build"
    depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcpd,docblox,phpunit,phpcb"/>
@@ -97,7 +97,7 @@
  </target>
 
  <target name="phploc" description="Measure project size using PHPLOC">
-  <exec executable="phploc">
+  <exec executable="${drupaltests}/vendor/phploc/phploc/composer/bin/phploc">
    <arg value="--log-csv" />
    <arg value="${builddir}/logs/phploc.csv" />
    <arg value="--exclude" />
