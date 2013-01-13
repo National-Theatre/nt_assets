@@ -118,7 +118,7 @@
    <arg value="--jdepend-xml=${builddir}/logs/jdepend.xml" />
    <arg value="--jdepend-chart=${builddir}/pdepend/dependencies.svg" />
    <arg value="--overview-pyramid=${builddir}/pdepend/overview-pyramid.svg" />
-   <arg value="--phpunit-xml=${builddir}/logs/pdepend.xml" />
+   <arg value="--summary-xml=${builddir}/logs/pdepend.xml" />
    <arg path="${drupalmodules}" />
   </exec>
  </target>
