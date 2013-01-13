@@ -58,8 +58,11 @@
         <sonar.language>php</sonar.language>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.phpDepend.analyzeOnly>true</sonar.phpDepend.analyzeOnly>
+        <sonar.phpDepend.reportFileRelativePath>../../build/logs</sonar.phpDepend.reportFileRelativePath>
         <sonar.phpPmd.analyzeOnly>true</sonar.phpPmd.analyzeOnly>
+        <sonar.phpPmd.reportFileRelativePath>../../build/logs</sonar.phpPmd.reportFileRelativePath>
         <sonar.phpCodesniffer.analyzeOnly>true</sonar.phpCodesniffer.analyzeOnly>
+        <sonar.phpCodesniffer.reportFileRelativePath>../../build/logs</sonar.phpCodesniffer.reportFileRelativePath>
         <sonar.phpUnit.analyzeOnly>true</sonar.phpUnit.analyzeOnly>
         <sonar.phpUnit.reportFileName>junit.xml</sonar.phpUnit.reportFileName>
         <sonar.phpUnit.coverageReportFile>clover.xml</sonar.phpUnit.coverageReportFile>
