@@ -59,6 +59,7 @@
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.phpDepend.analyzeOnly>true</sonar.phpDepend.analyzeOnly>
         <sonar.phpDepend.reportFileRelativePath>../../build/logs</sonar.phpDepend.reportFileRelativePath>
+        <sonar.phpDepend.reportType>summary-xml</sonar.phpDepend.reportType>
         <sonar.phpPmd.analyzeOnly>true</sonar.phpPmd.analyzeOnly>
         <sonar.phpPmd.reportFileRelativePath>../../build/logs</sonar.phpPmd.reportFileRelativePath>
         <sonar.phpCodesniffer.analyzeOnly>true</sonar.phpCodesniffer.analyzeOnly>
