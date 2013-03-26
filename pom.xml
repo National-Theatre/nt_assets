@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+@copywright jpdrawneek
+@author John-Paul Drawneek <jpd@drawneek.co.uk>
+-->
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>Drupal_projects</groupId>
+    <artifactId>nt_assets</artifactId>
+    <name>NT Assets module</name>
+    <version>1.0</version>
+    <packaging>pom</packaging>
+    <build>
+        <directory>build</directory>
+        <sourceDirectory>${basedir}/drupal/sites/all/modules/custom</sourceDirectory>
+        <testSourceDirectory>tests</testSourceDirectory>
+        <plugins>
+
+          <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                  <source>1.5</source>
+                  <target>1.5</target>
+                  <excludes>
+                      <exclude>**/*.*</exclude>
+                  </excludes>
+              </configuration>
+           </plugin>
+           <!--<plugin>
+             <groupId>org.codehaus.mojo</groupId>
+             <artifactId>build-helper-maven-plugin</artifactId>
+             <version>1.5</version>
+             <executions>
+                <execution>
+                  <id>add-source</id>
+                  <phase>generate-sources</phase>
+                  <goals>
+                      <goal>add-source</goal>
+                  </goals>
+                  <configuration>
+                      <sources>
+                          <source>${basedir}/drupal/sites/all/modules/calm_import</source>
+                          <source>${basedir}/drupal/sites/all/modules/nt_player</source>
+                          <source>${basedir}/drupal/sites/all/modules/nt_assets</source>
+                      </sources>
+                  </configuration>
+                </execution>
+              </executions>
+
+            </plugin>-->
+
+
+        </plugins>
+    </build>
+    <properties>
+        <sonar.phase>generate-sources</sonar.phase>
+        <sonar.language>php</sonar.language>
+        <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
+        <sonar.phpDepend.analyzeOnly>true</sonar.phpDepend.analyzeOnly>
+        <sonar.phpDepend.reportFileRelativePath>../../build/logs</sonar.phpDepend.reportFileRelativePath>
+        <sonar.phpDepend.reportType>summary-xml</sonar.phpDepend.reportType>
+        <sonar.phpPmd.analyzeOnly>true</sonar.phpPmd.analyzeOnly>
+        <sonar.phpPmd.reportFileRelativePath>../../build/logs</sonar.phpPmd.reportFileRelativePath>
+        <sonar.phpCodesniffer.analyzeOnly>true</sonar.phpCodesniffer.analyzeOnly>
+        <sonar.phpCodesniffer.reportFileRelativePath>../../build/logs</sonar.phpCodesniffer.reportFileRelativePath>
+        <sonar.phpUnit.analyzeOnly>true</sonar.phpUnit.analyzeOnly>
+        <sonar.phpUnit.reportFileName>junit.xml</sonar.phpUnit.reportFileName>
+        <sonar.phpUnit.coverageReportFile>clover.xml</sonar.phpUnit.coverageReportFile>
+        <!--<sonar.cpd.reportsPath>build/logs/pmd-cpd.xml</sonar.cpd.reportsPath>-->
+    </properties>
+</project>

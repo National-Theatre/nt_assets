@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+@copywright jpdrawneek
+@author John-Paul Drawneek <jpd@drawneek.co.uk>
+-->
+<project name="nt_assets" default="build">
+ <property name="drupalmodules" value="${basedir}/../drupal_template/drupal/sites/all/modules/custom" />
+ <property name="drupalstandard" value="${basedir}/../drupal_template/drupal/sites/all/modules/coder/coder_sniffer/Drupal" />
+ <property name="drupaltests" value="${basedir}/../drupal_template/tests" />
+ <property name="builddir" value="${basedir}/../build" />
+ <property name="excludemodules" value="" />
+
+ <patternset id="drupal.files.php">
+     <include name="**/*.php" />
+     <include name="**/*.module" />
+     <include name="**/*.install" />
+     <include name="**/*.inc" />
+     <include name="**/*.profile" />
+     <include name="**/*.test" />
+     <exclude name="**/upal/*" />
+ </patternset>
+ 
+ <target name="build-ci"
+   depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci" />
+ 
+ <target name="build"
+   depends="prepare,lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcpd,docblox,phpunit,phpcb"/>
+
+ <target name="build-parallel"
+   depends="prepare,lint,tools-parallel,phpunit,phpcb"/>
+
+ <target name="tools-parallel"
+         description="Run tools in parallel">
+  <parallel threadCount="2">
+   <sequential>
+    <antcall target="pdepend"/>
+    <antcall target="phpmd-ci"/>
+   </sequential>
+   <antcall target="phpcpd"/>
+   <antcall target="phpcs-ci"/>
+   <antcall target="phploc"/>
+   <antcall target="docblox"/>
+  </parallel>
+ </target>
+
+ <target name="clean" description="Cleanup build artifacts">
+  <delete dir="${builddir}/api"/>
+  <delete dir="${builddir}/code-browser"/>
+  <delete dir="${builddir}/coverage"/>
+  <delete dir="${builddir}/logs"/>
+  <delete dir="${builddir}/pdepend"/>
+ </target>
+
+    <target name="prepare" depends="clean" unless="prepared"
+         description="Prepare for build">
+        <mkdir dir="${builddir}/api"/>
+        <mkdir dir="${builddir}/code-browser"/>
+        <mkdir dir="${builddir}/coverage"/>
+        <mkdir dir="${builddir}/logs"/>
+        <mkdir dir="${builddir}/pdepend"/>
+        <mkdir dir="${builddir}/phpdox"/>
+        <!-- copy test components into place -->
+        <copy todir="${drupalmodules}/nt_assets">
+            <fileset dir="${basedir}">
+                <exclude name="**/upal/*" />
+            </fileset>
+        </copy>
+        <copy todir="${drupaltests}/config">
+            <fileset dir="${basedir}/upal/conf"/>
+        </copy>
+        <copy todir="${drupaltests}/features">
+            <fileset dir="${basedir}/upal/features"/>
+        </copy>
+        <copy todir="${drupaltests}/src">
+            <fileset dir="${basedir}/upal/src"/>
+        </copy>
+        <copy todir="${drupaltests}/tests">
+            <fileset dir="${basedir}/upal/tests"/>
+        </copy>
+        <property name="prepared" value="TRUE" />
+    </target>
+
+ <target name="lint" depends="prepare"
+         description="Simple PHP lint check on our code and test files">
+  <apply executable="php" failonerror="true">
+   <arg value="-l" />
+   <fileset dir="${drupalmodules}">
+    <patternset refid="drupal.files.php"/>
+    <modified />
+   </fileset>
+
+   <fileset dir="${drupaltests}/tests">
+    <include name="**/*.php" />
+    <modified />
+   </fileset>
+  </apply>
+ </target>
+
+ <target name="phploc" description="Measure project size using PHPLOC">
+  <exec executable="${drupaltests}/vendor/phploc/phploc/composer/bin/phploc">
+   <arg value="--log-csv" />
+   <arg value="${builddir}/logs/phploc.csv" />
+   <arg value="--exclude" />
+   <arg value="${excludemodules}" />
+   <arg value="--suffixes" />
+   <arg value="php,module,inc,install,profile,theme" />
+   <arg path="${drupalmodules}" />
+  </exec>
+ </target>
+
+ <target name="pdepend"
+         description="Calculate software metrics using PHP_Depend">
+  <exec executable="${drupaltests}/vendor/pdepend/pdepend/src/bin/pdepend">
+   <arg value="-d" />
+   <arg value="memory_limit=256M" />
+   <arg value="--suffix=php,module,inc,install,profile,theme" />
+   <arg value="--ignore=${excludemodules}" />
+   <arg value="--jdepend-xml=${builddir}/logs/jdepend.xml" />
+   <arg value="--jdepend-chart=${builddir}/pdepend/dependencies.svg" />
+   <arg value="--overview-pyramid=${builddir}/pdepend/overview-pyramid.svg" />
+   <arg value="--summary-xml=${builddir}/logs/pdepend.xml" />
+   <arg path="${drupalmodules}" />
+  </exec>
+ </target>
+
+ <target name="phpmd"
+         description="Perform project mess detection using PHPMD and print human readable output. Intended for usage on the command line before committing.">
+  <exec executable="phpmd">
+   <arg value="--exclude" />
+   <arg value="${excludemodules}" />
+   <arg value="--suffixes" />
+   <arg value="php,module,inc,install,profile,theme" />
+   <arg path="${drupalmodules}" />
+   <arg value="text" />
+   <!--<arg value="${basedir}/build/phpmd.xml" />-->
+   <arg value="codesize,unusedcode,naming" />
+  </exec>
+ </target>
+
+ <target name="phpmd-ci"
+         description="Perform project mess detection using PHPMD creating a log file for the continuous integration server">
+  <exec executable="${drupaltests}/vendor/phpmd/phpmd/src/bin/phpmd">
+   <arg value="--exclude" />
+   <arg value="${excludemodules}" />
+   <arg value="--suffixes" />
+   <arg value="php,module,inc,install,profile,theme" />
+   <arg path="${drupalmodules}" />
+   <arg value="xml" />
+   <arg value="codesize,unusedcode,naming" />
+   <!--<arg value="${basedir}/build/phpmd.xml" />-->
+   <arg value="--reportfile" />
+   <arg value="${builddir}/logs/pmd.xml" />
+  </exec>
+ </target>
+
+ <target name="phpcs" depends="prepare"
+         description="Find coding standard violations using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
+  <exec executable="${drupaltests}/vendor/squizlabs/php_codesniffer/scripts/phpcs">
+   <arg value="-d" />
+   <arg value="memory_limit=256M" />
+   <arg value="--standard=${drupalstandard}" />
+   <arg value="--extensions=php,module,inc,install,profile,theme" />
+   <!-- ignore test for now -->
+   <arg path="${drupalmodules}" />
+  </exec>
+ </target>
+
+ <target name="phpcs-ci" depends="prepare"
+         description="Find coding standard violations using PHP_CodeSniffer creating a log file for the continuous integration server">
+  <exec executable="${drupaltests}/vendor/squizlabs/php_codesniffer/scripts/phpcs">
+   <arg value="--report=checkstyle" />
+   <arg value="--report-file=${builddir}/logs/checkstyle.xml" />
+   <arg value="--report-xml=${builddir}/logs/codesniffer.xml" />
+   <arg value="-d" />
+   <arg value="memory_limit=256M" />
+   <arg value="--standard=${drupalstandard}" />
+   <arg value="--extensions=php,module,inc,install,profile,theme" />
+   <!-- ignore test for now -->
+   <arg path="${drupalmodules}" />
+  </exec>
+ </target>
+
+ <target name="phpcpd" description="Find duplicate code using PHPCPD">
+  <exec executable="phpcpd">
+   <arg value="--log-pmd" />
+   <arg value="${builddir}/logs/pmd-cpd.xml" />
+   <arg value="--suffixes" />
+   <arg value="php,module,inc,install,profile,theme" />   
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/views" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/services" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/facetapi" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/ctools" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/entityreference" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/date" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/ckeditor" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/entity" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/apachesolr" />
+   <arg value="--exclude" />
+   <arg value="${drupalmodules}/transliteration" />
+   <arg path="${drupalmodules}" />   
+  </exec>
+ </target>
+
+ <target name="docblox"
+         description="Generate API documentation using docblox">
+	<!--<exec executable="docblox">
+		<arg value="-d" />
+		<arg value="${drupalmodules}" />
+		<arg value="-t" />
+		<arg value="${basedir}/build/phpdox" />
+	</exec>-->
+ </target>
+
+ <target name="phpunit" description="Run unit tests with PHPUnit">
+	<exec executable="phpunit" failonerror="true">
+		<arg value="-d" />
+   		<arg value="memory_limit=2G" />
+		<arg value="-c" />
+   		<arg value="${basedir}/tests/phpunit-ci.xml" />
+   		<arg value="${basedir}/tests" />
+	</exec>
+ </target>
+
+ <target name="phpcb"
+         description="Aggregate tool output with PHP_CodeBrowser">
+  <exec executable="phpcb">
+   <arg value="--log" />
+   <arg path="${builddir}/logs" />
+   <arg value="--source" />
+   <arg path="${drupalmodules}" />
+   <arg value="--output" />
+   <arg path="${builddir}/code-browser" />
+  </exec>
+ </target>
+</project> 
