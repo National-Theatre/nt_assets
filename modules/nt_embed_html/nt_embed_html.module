@@ -1,0 +1,101 @@
+<?php
+/**
+ * @file
+ * @copyright The Royal National Theatre
+ * @author John-Paul Drawneek
+ */
+
+/**
+ * Implements hook_menu().
+ *
+ * @return array
+ *   Menu config
+ */
+function nt_embed_html_menu() {
+  return array();
+}
+/**
+ * Implements hook_theme().
+ *
+ * @param string $existing
+ *   An array of existing implementations that may be used for override
+ *   purposes.
+ * @param string $type
+ *   Whether a theme, module, etc. is being processed.
+ * @param string $theme
+ *   The actual name of theme, module, etc. that is being being processed.
+ * @param string $path
+ *   The directory path of the theme or module, so that it doesn't need to be
+ *   looked up.
+ *
+ * @return array
+ *   An associative array of theme hook information.
+ */
+function nt_embed_html_theme($existing, $type, $theme, $path) {
+  return array();
+}
+/**
+ * Implements hook_node_view().
+ *
+ * @param stdClass $node
+ *   The node that is being assembled for rendering.
+ * @param string $view_mode
+ *   The $view_mode parameter from node_view().
+ * @param string $langcode
+ *   The language code used for rendering.
+ */
+function nt_embed_html_node_view($node, $view_mode, $langcode) {
+  if ($node->type == 'rich_media' || $node->type == 'nt_rich_media') {
+    if (isset($node->nt_embed_html_block) && !empty($node->nt_embed_html_block)) {
+      $node->content['nt_embed_html_block'] = field_view_field(
+        'node',
+        $node,
+        'nt_embed_html_block',
+        array('label' => 'hidden')
+      );
+    }
+    else {
+      $node->content['nt_embed_html_block'] = FALSE;
+    }
+  }
+}
+/**
+ * Implements hook_nt_player_rich_media_data().
+ *
+ * @param \stdClass $asset
+ *   Data object to be displayed.
+ * @param \stdClass $raw_asset
+ *   Raw data object to be displayed.
+ */
+function nt_embed_html_nt_player_rich_media_data($asset, $raw_asset) {
+  if(isset($raw_asset->nt_embed_html_block) && !empty($raw_asset->nt_embed_html_block)) {
+    $asset->nt_embed_html_block = $raw_asset->nt_embed_html_block;
+  }
+  else {
+    $asset->nt_embed_html_block = FALSE;
+  }
+}
+/**
+ * Implements hook_nt_player_rich_media_display_alter().
+ *
+ * @param string $display
+ *   Output HTML to be rendered.
+ * @param array $settings
+ *   Settings:
+ *   - data: data object
+ *   - width: width as integer value
+ *   - height: height value as integer value
+ */
+function nt_embed_html_nt_player_rich_media_display_alter(&$display, $settings) {
+  if ($settings['data']->nt_embed_html_block) {
+    $display = $settings['data']->nt_embed_html_block[LANGUAGE_NONE][0]['value'];
+  }
+}
+/**
+ * Implements hook_nt_rich_media_view_render_alter().
+ */
+function nt_embed_html_nt_rich_media_view_render_alter(&$node, &$context1 = NULL, &$context2 = NULL, &$context3 = NULL) {
+  if (isset($node->nt_embed_html_block) && !empty($node->nt_embed_html_block)) {
+    $node->content['main_content'] = $node->nt_embed_html_block[LANGUAGE_NONE][0]['value'];
+  }
+}

@@ -1,0 +1,88 @@
+<?php
+/**
+ * @file
+ * @copyright The Royal National Theatre
+ * @author John-Paul Drawneek
+ */
+
+/**
+ * Implements hook_schema().
+ *
+ * @return array
+ *   A schema definition structure array.
+ */
+function nt_edge_suite_schema() {
+  return array();
+}
+/**
+ * Implements hook_field_schema().
+ *
+ * @param array $field
+ *   A field structure.
+ */
+function nt_edge_suite_field_schema($field) {
+
+}
+/**
+ * Implements hook_install().
+ */
+function nt_edge_suite_install() {
+  node_types_rebuild();
+  $types = node_type_get_types();
+  $nt_rich_media = $types['rich_media'];
+  foreach (_nt_edge_suite_install_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_edge_suite_install_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = $nt_rich_media->type;
+    field_create_instance($instance);
+  }
+}
+/**
+ * Implements hook_uninstall().
+ */
+function nt_edge_suite_uninstall() {
+  foreach (array_keys(_nt_edge_suite_install_fields()) as $field) {
+    field_delete_field($field);
+  }
+  field_purge_batch(1000);
+}
+/**
+ * Rich media field config.
+ * @access private
+ *
+ * @return array
+ *   field config.
+ */
+function _nt_edge_suite_install_fields() {
+  return array(
+    'nt_edge_suite_block' => array(
+      'field_name' => 'nt_edge_suite_block',
+      'cardinality' => 1,
+      'type' => 'text',
+      'settings' => array(
+        'max_length' => 255,
+      ),
+    ),
+  );
+}
+/**
+ * Rich media field instances config.
+ * @access private
+ *
+ * @return array
+ *   instances config.
+ */
+function _nt_edge_suite_install_instances() {
+  $t = get_t();
+  return array(
+    'nt_edge_suite_block' => array(
+      'field_name' => 'nt_edge_suite_block',
+      'label' => $t('Edge Suite Block'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+  );
+}

@@ -1,0 +1,156 @@
+<?php
+/**
+ * @file
+ * @copyright The Royal National Theatre
+ * @author John-Paul Drawneek
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function nt_rich_media_schema() {
+  return array();
+}
+/**
+ * Implements hook_field_schema().
+ */
+function nt_rich_media_field_schema($field) {
+
+}
+/**
+ * Implements hook_install().
+ */
+function nt_rich_media_install() {
+  $t = get_t();
+  node_types_rebuild();
+  $shed_event = node_type_load('nt_rich_media');
+  node_add_body_field($shed_event, $t('Description'));
+  foreach (_nt_rich_media_install_video_fields() as $field) {
+    field_create_field($field);
+  }
+  foreach (_nt_rich_media_install_instances() as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = 'nt_rich_media';
+    field_create_instance($instance);
+  }
+}
+/**
+ * Implements hook_uninstall().
+ */
+function nt_rich_media_uninstall() {
+  $sql = 'SELECT nid FROM {node} n WHERE n.type = :type';
+  $result = db_query($sql, array(':type' => 'nt_rich_media'));
+  $nids = array();
+  foreach ($result as $row) {
+    $nids[] = $row->nid;
+  }
+  node_delete_multiple($nids);
+  node_type_delete('nt_rich_media');
+  foreach (array_keys(_nt_rich_media_install_video_fields()) as $field_name) {
+    field_delete_field($field_name);
+  }
+  field_purge_batch(1000);
+}
+/**
+ * Install fields.
+ * @access private
+ *
+ * @return array
+ *   video fields config
+ */
+function _nt_rich_media_install_video_fields() {
+  return array(
+    'nt_rich_file_upload' => array(
+      'field_name' => 'nt_rich_file_upload',
+      'cardinality' => 1,
+      'type' => 'file',
+      'settings' => array(
+        'uri_scheme' => 'public',
+      ),
+    ),
+    'nt_rich_file_height' => array(
+      'field_name' => 'nt_rich_file_height',
+      'cardinality' => 1,
+      'type' => 'number_integer',
+      'settings' => array(),
+    ),
+    'nt_rich_thumb' => array(
+      'field_name' => 'nt_rich_thumb',
+      'cardinality' => 1,
+      'type' => 'entityreference',
+      'settings' => array(
+        'target_type' => 'node',
+        'handler_settings' => array(
+          'target_bundles' => array(
+            'image',
+          ),
+        ),
+      ),
+    ),
+  );
+}
+/**
+ * Helper function to add field instances.
+ * @access private
+ *
+ * @return array
+ *   Instances config.
+ */
+function _nt_rich_media_install_instances() {
+  $t = get_t();
+  return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+    'nt_rich_file_upload' => array(
+      'field_name' => 'nt_rich_file_upload',
+      'label' => $t('File'),
+      'description' => $t('Video file to embedded.'),
+      'widget' => array(
+        'type' => 'file_generic',
+      ),
+      'settings' => array(
+        'file_extensions' => 'flv mp3 webm mp4 swf',
+        'file_directory'  => 'rich-media',
+      ),
+      'locked' => TRUE,
+      'required' => FALSE,
+    ),
+    'nt_rich_file_height' => array(
+      'field_name' => 'nt_rich_file_height',
+      'label' => $t('File height'),
+      'description' => $t('Video file height in pixels, don\'t include the px.'),
+      'widget' => array(
+        'type' => 'number',
+      ),
+      'settings' => array(),
+      'locked'   => TRUE,
+      'required' => FALSE,
+    ),
+    'nt_rich_thumb' => array(
+      'field_name' => 'nt_rich_thumb',
+      'label' => $t('Thumb'),
+      'widget' => array(
+        'type' => 'entityreference_autocomplete',
+      ),
+    ),
+    'nt_tags' => array(
+      'field_name' => 'nt_tags',
+      'label' => $t('Free tags'),
+      'widget' => array(
+        'type' => 'taxonomy_autocomplete',
+      ),
+    ),
+    'nt_archive_code' => array(
+      'field_name' => 'nt_archive_code',
+      'label' => $t('Archive code'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+  );
+}

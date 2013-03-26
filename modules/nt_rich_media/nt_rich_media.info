@@ -1,0 +1,13 @@
+name = NT Rich Media
+description = This is required and needs replacing.
+core = 7.x
+; stylesheets[all][] =
+; scripts[] =
+; files[] =
+dependencies[] = nt_assets_core
+dependencies[] = field
+package = "National Theatre"
+php = 5.3
+version = 7.x-1.0 
+; configure =
+

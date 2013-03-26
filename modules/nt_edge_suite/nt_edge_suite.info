@@ -1,0 +1,13 @@
+name = NT Edge Suite
+description = This provides a link between Edge Suite module with rich media.
+core = 7.x
+; stylesheets[all][] =
+; scripts[] =
+; files[] =
+dependencies[] = edge_suite
+dependencies[] = nt_rich_media
+package = "National Theatre"
+php = 5.3
+version = 7.x-1.0 
+; configure =
+
