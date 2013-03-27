@@ -7,18 +7,12 @@
 
 /**
  * Implements hook_schema().
- *
- * @return array
- *   A schema definition structure array.
  */
 function nt_edge_suite_schema() {
   return array();
 }
 /**
  * Implements hook_field_schema().
- *
- * @param array $field
- *   A field structure.
  */
 function nt_edge_suite_field_schema($field) {
 
@@ -29,7 +23,7 @@ function nt_edge_suite_field_schema($field) {
 function nt_edge_suite_install() {
   node_types_rebuild();
   $types = node_type_get_types();
-  $nt_rich_media = $types['rich_media'];
+  $nt_rich_media = $types['nt_rich_media'];
   foreach (_nt_edge_suite_install_fields() as $field) {
     field_create_field($field);
   }

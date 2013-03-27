@@ -94,7 +94,7 @@ function nt_embed_html_nt_player_rich_media_display_alter(&$display, $settings) 
 /**
  * Implements hook_nt_rich_media_view_render_alter().
  */
-function nt_embed_html_nt_rich_media_view_render_alter(&$node, &$context1 = NULL, &$context2 = NULL, &$context3 = NULL) {
+function nt_embed_html_nt_rich_media_view_render_alter(&$node) {
   if (isset($node->nt_embed_html_block) && !empty($node->nt_embed_html_block)) {
     $node->content['main_content'] = $node->nt_embed_html_block[LANGUAGE_NONE][0]['value'];
   }
