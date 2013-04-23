@@ -73,7 +73,7 @@ class FinalCutImagePublicStreamWrapper extends DrupalLocalStreamWrapper {
     else {
       return variable_get(
           'finalcut_image_directory',
-          'http://media.nt-online.org/finalcut/image_exports'
+          'http://video.nt-online.org/finalcut/image_exports'
           ) . '/' . drupal_encode_path($path);
     }
   }
@@ -113,7 +113,7 @@ class FinalCutImagePublicStreamWrapper extends DrupalLocalStreamWrapper {
     else {
       $realpath = variable_get(
           'finalcut_image_directory',
-          'http://media.nt-online.org/finalcut/image_exports'
+          'http://video.nt-online.org/finalcut/image_exports'
         ) 
         . '/' . $this->getTarget($uri);
     }
