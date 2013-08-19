@@ -578,6 +578,13 @@ function _nt_assets_install_audio_fields() {
 function _nt_assets_install_audio_instances() {
   $t = get_t();
   return array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
     'nt_audio_file_url' => array(
       'field_name' => 'nt_audio_file_url',
       'label' => $t('Audio file URL'),
@@ -753,4 +760,23 @@ function _nt_assets_uninstall_gallery() {
     field_delete_instance($instance);
   }
   node_type_delete('nt_gallery');
+}
+/**
+ * Add missing Display title for nt_audio.
+ */
+function nt_assets_update_7001() {
+  $instances = array(
+    'nt_display_title' => array(
+      'field_name' => 'nt_display_title',
+      'label' => $t('Display title'),
+      'widget' => array(
+        'type' => 'text_textfield',
+      ),
+    ),
+  );
+  foreach ($instances as $instance) {
+    $instance['entity_type'] = 'node';
+    $instance['bundle'] = 'nt_audio';
+    field_create_instance($instance);
+  }
 }
