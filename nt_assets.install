@@ -765,6 +765,7 @@ function _nt_assets_uninstall_gallery() {
  * Add missing Display title for nt_audio.
  */
 function nt_assets_update_7001() {
+  $t = get_t();
   $instances = array(
     'nt_display_title' => array(
       'field_name' => 'nt_display_title',
